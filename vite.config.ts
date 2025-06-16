@@ -11,6 +11,7 @@ export default defineConfig({
       tsconfigPath: './tsconfig.json' // Point to the root tsconfig
     }),
   ],
+  publicDir: false, // Prevent copying files from public directory
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),

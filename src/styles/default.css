@@ -1,0 +1,120 @@
+/* src/styles/default.css */
+
+/* Main Timeline Container */
+.rt-timeline-container {
+  position: relative; /* Establishes a positioning context */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Basic overflow handling */
+  border: 1px solid #ddd;
+  font-family: sans-serif;
+  background-color: #f9f9f9;
+}
+
+/* Timeline Ruler */
+.rt-timeline-ruler {
+  position: relative;
+  height: 30px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0; /* Prevent ruler from shrinking */
+  cursor: pointer;
+}
+
+.rt-ruler-tick {
+  position: absolute;
+  bottom: 0;
+  width: 1px;
+  background-color: #aaa;
+}
+
+.rt-ruler-tick-minor {
+  height: 8px;
+}
+
+.rt-ruler-tick-major {
+  height: 15px;
+  background-color: #888;
+}
+
+.rt-ruler-label {
+  position: absolute;
+  bottom: 12px; /* Adjusted to be above major ticks */
+  font-size: 10px;
+  color: #333;
+  user-select: none; /* Prevent text selection during interaction */
+  padding-left: 2px;
+}
+
+/* Tracks Wrapper - holds scenes and global tracks */
+.tracks-wrapper { /* This class is used in Timeline.tsx */
+  position: relative;
+  flex-grow: 1; /* Allow wrapper to take available vertical space */
+  overflow-x: auto; /* Allow horizontal scrolling for tracks */
+  overflow-y: hidden; /* Vertical scrolling managed by overall page or specific track groups */
+  padding: 10px 0; /* Some vertical padding */
+  border: 1px solid transparent; /* Placeholder, was green in earlier debug */
+  min-height: 80px; /* Ensure it has some base height */
+}
+
+/* Scene Track - specific container for scenes */
+.scene-track { /* This class is used in Timeline.tsx */
+  position: relative; /* For absolute positioning of scenes */
+  min-height: 70px; /* Minimum height for the scene track area */
+  /* width: fit-content; */ /* Let it expand with content */
+}
+
+/* Scene Item */
+.rt-scene-item {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 4px;
+  overflow: visible; /* To allow resize handles to peek out */
+  display: flex; /* For internal alignment of content if needed */
+  flex-direction: column;
+}
+
+.rt-scene-item .rt-scene-item-layers-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Layer Item */
+.rt-layer-item {
+  position: absolute;
+  box-sizing: border-box;
+  border-radius: 3px;
+  overflow: visible; /* To allow resize handles to peek out */
+  padding: 0 5px; /* Horizontal padding for text content */
+  display: flex; /* Align items, e.g., text vertically centered */
+  align-items: center;
+  white-space: nowrap;
+  text-overflow: ellipsis; /* For long text */
+}
+
+/* Playhead */
+.rt-playhead {
+  position: absolute;
+  top: 0; /* Spans from top of its container (TimelineRuler + TracksWrapper) */
+  width: 2px;
+  background-color: red;
+  z-index: 100; /* High z-index to be visible */
+  pointer-events: none; /* Generally, playhead itself is not interactive */
+}
+
+/* Resize Handles (Generic - can be specialized if needed) */
+.rt-resize-handle { /* A common class if we refactor handles */
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 5; /* Above parent item but below actively dragged item */
+}
+.rt-resize-handle-left {
+  /* Specific styling for left handle if using a common component */
+}
+.rt-resize-handle-right {
+  /* Specific styling for right handle */
+}

@@ -2,9 +2,7 @@
 import React from 'react';
 import type { Scene, Layer } from '../types';
 import { LayerItem } from './LayerItem';
-import { useDraggable } from '@dnd-kit/core';
-// CSS import might not be needed if not using transform directly for drag visuals
-// import { CSS } from '@dnd-kit/utilities';
+import { useDraggable } from '@dnd-kit/core'; // Modifier removed
 
 // Re-using a similar Handle component structure as in LayerItem for consistency
 // This could be refactored into a shared component later if desired.
@@ -19,7 +17,7 @@ const ResizeHandle = (props: {
     data: {
       type: props.type,
       originalElement: props.scene,
-      sceneId: props.scene.id, // Keep consistent data structure if useful
+      sceneId: props.scene.id,
     },
   });
 
@@ -48,17 +46,19 @@ const ResizeHandle = (props: {
 
 export interface SceneItemProps {
   scene: Scene;
+  allScenes: Scene[]; // ADDED: For snapping calculations
   layersInScene: Layer[];
   timeToPixels: (time: number) => number;
+  pixelsToTime: (pixels: number) => number; // ADDED: For snapping
 }
 
-export const SceneItem = ({ scene, layersInScene, timeToPixels }: SceneItemProps) => {
+export const SceneItem = ({ scene, allScenes, layersInScene, timeToPixels, pixelsToTime }: SceneItemProps) => {
+  // Snapping logic will be moved to Timeline.tsx's onDragMove for main item drag
+
   const {attributes, listeners, setNodeRef, isDragging: isSceneDragging} = useDraggable({
     id: `scene-${scene.id}`,
-    data: {
-      type: 'scene',
-      originalElement: scene,
-    },
+    data: { type: 'scene', originalElement: scene },
+    // modifiers: [snapToSceneEdgesModifier] // MODIFIER REMOVED FROM HERE
   });
 
   const sceneStyle: React.CSSProperties = {
@@ -94,7 +94,9 @@ export const SceneItem = ({ scene, layersInScene, timeToPixels }: SceneItemProps
           <LayerItem
             key={layer.id}
             layer={layer}
+            allLayersInScene={layersInScene} // PASS ALL LAYERS IN THIS SCENE
             timeToPixels={timeToPixels}
+            pixelsToTime={pixelsToTime} // PASS pixelsToTime
           />
         ))}
       </div>

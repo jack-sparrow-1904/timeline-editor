@@ -7,11 +7,14 @@ import { useTimelineUtils } from './hooks/useTimelineUtils';
 import { SceneItem } from './components/SceneItem';
 import { Playhead } from './components/Playhead';
 import { TimelineRuler } from './components/TimelineRuler';
+import './styles/default.css';
+
+const SNAP_THRESHOLD_PX = 8; // Define snap threshold here
 
 export const TimelineComponent = (props: TimelineProps) => {
   const {
     scenes, layers, currentTime, zoomLevel,
-    onSceneChange, onLayerChange, /* onTimeChange, onZoomChange, onSelect, */ // onTimeChange is not used by these handlers but is a prop
+    onSceneChange, onLayerChange, onTimeChange,
     pixelsPerSecondAtZoom1 = 100,
     className, style
   } = props;
@@ -49,7 +52,66 @@ export const TimelineComponent = (props: TimelineProps) => {
 
       if (!activeData) return;
 
-      const deltaXTime = pixelsToTime(delta.x);
+      let deltaXAdjusted = delta.x; // This will be adjusted by snapping logic for 'scene' and 'layer' types
+
+      // Snapping for scene dragging
+      if (activeData.type === 'scene' && scenes) {
+        const activeScene = activeData.originalElement as Scene;
+        const activeSceneOriginalLeft = timeToPixels(activeScene.startTime);
+        const activeSceneWidth = timeToPixels(activeScene.duration);
+        const projectedLeft = activeSceneOriginalLeft + delta.x;
+        const projectedRight = projectedLeft + activeSceneWidth;
+
+        for (const otherScene of scenes) {
+          if (otherScene.id === activeScene.id) continue;
+          const otherSceneLeft = timeToPixels(otherScene.startTime);
+          const otherSceneRight = otherSceneLeft + timeToPixels(otherScene.duration);
+
+          if (Math.abs(projectedLeft - otherSceneRight) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherSceneRight - activeSceneOriginalLeft; break;
+          }
+          if (Math.abs(projectedRight - otherSceneLeft) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherSceneLeft - activeSceneWidth - activeSceneOriginalLeft; break;
+          }
+          if (Math.abs(projectedLeft - otherSceneLeft) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherSceneLeft - activeSceneOriginalLeft; break;
+          }
+          if (Math.abs(projectedRight - otherSceneRight) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherSceneRight - activeSceneWidth - activeSceneOriginalLeft; break;
+          }
+        }
+      }
+      // Snapping for layer dragging (within the same scene)
+      else if (activeData.type === 'layer' && layers) {
+        const activeLayer = activeData.originalElement as Layer;
+        const layersInSameScene = layers.filter(l => l.sceneId === activeLayer.sceneId);
+        const activeLayerOriginalLeft = timeToPixels(activeLayer.startTime);
+        const activeLayerWidth = timeToPixels(activeLayer.duration);
+        const projectedLeft = activeLayerOriginalLeft + delta.x;
+        const projectedRight = projectedLeft + activeLayerWidth;
+
+        for (const otherLayer of layersInSameScene) {
+          if (otherLayer.id === activeLayer.id) continue;
+          const otherLayerLeft = timeToPixels(otherLayer.startTime);
+          const otherLayerRight = otherLayerLeft + timeToPixels(otherLayer.duration);
+
+          if (Math.abs(projectedLeft - otherLayerRight) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherLayerRight - activeLayerOriginalLeft; break;
+          }
+          if (Math.abs(projectedRight - otherLayerLeft) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherLayerLeft - activeLayerWidth - activeLayerOriginalLeft; break;
+          }
+          if (Math.abs(projectedLeft - otherLayerLeft) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherLayerLeft - activeLayerOriginalLeft; break;
+          }
+          if (Math.abs(projectedRight - otherLayerRight) <= SNAP_THRESHOLD_PX) {
+            deltaXAdjusted = otherLayerRight - activeLayerWidth - activeLayerOriginalLeft; break;
+          }
+        }
+      }
+
+      const deltaXTimeToUse = pixelsToTime(deltaXAdjusted); // Use potentially adjusted delta for time conversion for move
+      const originalDeltaXTime = pixelsToTime(delta.x); // Original delta for resize, which doesn't snap this way
 
       if ((activeData.type === 'scene-resize-left' || activeData.type === 'scene-resize-right') && onSceneChange) {
         const sceneElement = activeData.originalElement as Scene;
@@ -60,14 +122,14 @@ export const TimelineComponent = (props: TimelineProps) => {
         let newDuration = dragStartSceneState.duration;
 
         if (activeData.type === 'scene-resize-left') {
-            newStartTime = dragStartSceneState.startTime + deltaXTime;
-            newDuration = dragStartSceneState.duration - deltaXTime;
-            if (newDuration < 100) { // Min scene duration 100ms
+            newStartTime = dragStartSceneState.startTime + originalDeltaXTime; // Resize uses original delta
+            newDuration = dragStartSceneState.duration - originalDeltaXTime;
+            if (newDuration < 100) {
                 newDuration = 100;
                 newStartTime = dragStartSceneState.startTime + dragStartSceneState.duration - newDuration;
             }
         } else { // scene-resize-right
-            newDuration = dragStartSceneState.duration + deltaXTime;
+            newDuration = dragStartSceneState.duration + originalDeltaXTime; // Resize uses original delta
             if (newDuration < 100) {
                 newDuration = 100;
             }
@@ -83,21 +145,28 @@ export const TimelineComponent = (props: TimelineProps) => {
         let newDuration = dragStartLayerState.duration;
 
         if (activeData.type === 'layer-resize-left') {
-            newStartTime = dragStartLayerState.startTime + deltaXTime;
-            newDuration = dragStartLayerState.duration - deltaXTime;
+            newStartTime = dragStartLayerState.startTime + originalDeltaXTime; // Resize uses original delta
+            newDuration = dragStartLayerState.duration - originalDeltaXTime;
             if (newDuration < 50) {
                 newDuration = 50;
                 newStartTime = dragStartLayerState.startTime + dragStartLayerState.duration - newDuration;
             }
         } else { // layer-resize-right
-            newDuration = dragStartLayerState.duration + deltaXTime;
+            newDuration = dragStartLayerState.duration + originalDeltaXTime; // Resize uses original delta
             if (newDuration < 50) {
                 newDuration = 50;
             }
         }
-        // In handleDragMove for layer resize, ensure startTime is part of the payload for consistency,
-        // even if only duration changes for 'layer-resize-right'.
         onLayerChange({ type: 'resize', layer: { ...layerElement, startTime: newStartTime, duration: newDuration } });
+      }
+      // Apply snapping for item move
+      else if (activeData.type === 'scene' && onSceneChange) {
+        const sceneElement = activeData.originalElement as Scene;
+        // For move, we adjust startTime based on the (potentially) snapped delta
+        onSceneChange({ type: 'move', scene: { ...sceneElement, startTime: sceneElement.startTime + deltaXTimeToUse } });
+      } else if (activeData.type === 'layer' && onLayerChange) {
+        const layerElement = activeData.originalElement as Layer;
+        onLayerChange({ type: 'move', layer: { ...layerElement, startTime: layerElement.startTime + deltaXTimeToUse } });
       }
   };
 
@@ -133,7 +202,9 @@ export const TimelineComponent = (props: TimelineProps) => {
       }
 
       const { type, originalElement } = activeData;
-      const dragTimeDelta = pixelsToTime(delta.x);
+      // For move operations, use the potentially snapped delta from onDragMove's logic
+      // For resize operations, onDragEnd recalculates based on original delta to finalize.
+      let dragTimeDelta = pixelsToTime(delta.x);
 
       if ((type === 'scene-resize-left' || type === 'scene-resize-right') && onSceneChange) {
           const sceneElement = activeData.originalElement as Scene;
@@ -142,16 +213,17 @@ export const TimelineComponent = (props: TimelineProps) => {
 
           let newStartTime = dragStartSceneState.startTime;
           let newDuration = dragStartSceneState.duration;
+          const finalResizeDeltaXTime = pixelsToTime(delta.x); // Use raw delta for final calculation for resize
 
           if (type === 'scene-resize-left') {
-              newStartTime = dragStartSceneState.startTime + dragTimeDelta;
-              newDuration = dragStartSceneState.duration - dragTimeDelta;
+              newStartTime = dragStartSceneState.startTime + finalResizeDeltaXTime;
+              newDuration = dragStartSceneState.duration - finalResizeDeltaXTime;
               if (newDuration < 100) {
                   newDuration = 100;
                   newStartTime = dragStartSceneState.startTime + dragStartSceneState.duration - newDuration;
               }
           } else { // scene-resize-right
-              newDuration = dragStartSceneState.duration + dragTimeDelta;
+              newDuration = dragStartSceneState.duration + finalResizeDeltaXTime;
               if (newDuration < 100) {
                   newDuration = 100;
               }
@@ -164,17 +236,72 @@ export const TimelineComponent = (props: TimelineProps) => {
               delete activeData.dragStartSceneState;
           }
       } else if (type === 'scene' && onSceneChange) {
-          const sceneElement = originalElement as Scene;
+          // For 'move', the delta might have been adjusted by snapping in onDragMove.
+          // Re-evaluate final snapped position based on total delta.
+          // Or, trust the last onDragMove's snapped position if it directly updated state (which it doesn't here, it calls onSceneChange).
+          // For simplicity, we recalculate snap here for final position for 'move'.
+          let finalDeltaX = delta.x;
+          const activeScene = originalElement as Scene;
+          const activeSceneOriginalLeft = timeToPixels(activeScene.startTime);
+          const activeSceneWidth = timeToPixels(activeScene.duration);
+          const projectedLeft = activeSceneOriginalLeft + delta.x;
+          const projectedRight = projectedLeft + activeSceneWidth;
+
+          for (const otherScene of scenes) {
+            if (otherScene.id === activeScene.id) continue;
+            const otherSceneLeft = timeToPixels(otherScene.startTime);
+            const otherSceneRight = otherSceneLeft + timeToPixels(otherScene.duration);
+            if (Math.abs(projectedLeft - otherSceneRight) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherSceneRight - activeSceneOriginalLeft; break;
+            }
+            if (Math.abs(projectedRight - otherSceneLeft) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherSceneLeft - activeSceneWidth - activeSceneOriginalLeft; break;
+            }
+            if (Math.abs(projectedLeft - otherSceneLeft) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherSceneLeft - activeSceneOriginalLeft; break;
+            }
+            if (Math.abs(projectedRight - otherSceneRight) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherSceneRight - activeSceneWidth - activeSceneOriginalLeft; break;
+            }
+          }
+          dragTimeDelta = pixelsToTime(finalDeltaX); // Use the snapped delta for time calculation
           onSceneChange({
               type: 'move',
-              scene: { ...sceneElement, startTime: sceneElement.startTime + dragTimeDelta }
+              scene: { ...activeScene, startTime: activeScene.startTime + dragTimeDelta }
           });
+
       } else if (type === 'layer' && onLayerChange) {
-          const layerElement = originalElement as Layer;
+          let finalDeltaX = delta.x;
+          const activeLayer = originalElement as Layer;
+          const layersInSameScene = layers.filter(l => l.sceneId === activeLayer.sceneId);
+          const activeLayerOriginalLeft = timeToPixels(activeLayer.startTime);
+          const activeLayerWidth = timeToPixels(activeLayer.duration);
+          const projectedLeft = activeLayerOriginalLeft + delta.x;
+          const projectedRight = projectedLeft + activeLayerWidth;
+
+          for (const otherLayer of layersInSameScene) {
+            if (otherLayer.id === activeLayer.id) continue;
+            const otherLayerLeft = timeToPixels(otherLayer.startTime);
+            const otherLayerRight = otherLayerLeft + timeToPixels(otherLayer.duration);
+            if (Math.abs(projectedLeft - otherLayerRight) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherLayerRight - activeLayerOriginalLeft; break;
+            }
+            if (Math.abs(projectedRight - otherLayerLeft) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherLayerLeft - activeLayerWidth - activeLayerOriginalLeft; break;
+            }
+            if (Math.abs(projectedLeft - otherLayerLeft) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherLayerLeft - activeLayerOriginalLeft; break;
+            }
+            if (Math.abs(projectedRight - otherLayerRight) <= SNAP_THRESHOLD_PX) {
+                finalDeltaX = otherLayerRight - activeLayerWidth - activeLayerOriginalLeft; break;
+            }
+          }
+          dragTimeDelta = pixelsToTime(finalDeltaX);
           onLayerChange({
               type: 'move',
-              layer: { ...layerElement, startTime: layerElement.startTime + dragTimeDelta }
+              layer: { ...activeLayer, startTime: activeLayer.startTime + dragTimeDelta }
           });
+
       } else if ((type === 'layer-resize-left' || type === 'layer-resize-right') && onLayerChange) {
           const layerElement = activeData.originalElement as Layer;
           const dragStartLayerState = activeData.dragStartLayerState as {startTime: number, duration: number} | undefined;
@@ -182,16 +309,17 @@ export const TimelineComponent = (props: TimelineProps) => {
 
           let newStartTime = dragStartLayerState.startTime;
           let newDuration = dragStartLayerState.duration;
+          const finalResizeDeltaXTime = pixelsToTime(delta.x); // Use raw delta for final calculation
 
           if (type === 'layer-resize-left') {
-              newStartTime = dragStartLayerState.startTime + dragTimeDelta;
-              newDuration = dragStartLayerState.duration - dragTimeDelta;
+              newStartTime = dragStartLayerState.startTime + finalResizeDeltaXTime;
+              newDuration = dragStartLayerState.duration - finalResizeDeltaXTime;
               if (newDuration < 50) {
                   newDuration = 50;
                   newStartTime = dragStartLayerState.startTime + dragStartLayerState.duration - newDuration;
               }
           } else { // layer-resize-right
-              newDuration = dragStartLayerState.duration + dragTimeDelta;
+              newDuration = dragStartLayerState.duration + finalResizeDeltaXTime;
               if (newDuration < 50) {
                   newDuration = 50;
               }
@@ -215,7 +343,7 @@ export const TimelineComponent = (props: TimelineProps) => {
   }, [scenes]);
 
   return (
-    <div ref={timelineWrapperRef} className={`timeline-container ${className || ''}`} style={{ position: 'relative', ...style }}>
+    <div ref={timelineWrapperRef} className={`rt-timeline-container ${className || ''}`} style={{ position: 'relative', ...style }}>
       <DndContext
           onDragStart={handleDragStart}
           onDragMove={handleDragMove}
@@ -224,8 +352,10 @@ export const TimelineComponent = (props: TimelineProps) => {
         <TimelineRuler
           duration={totalDuration}
           timeToPixels={timeToPixels}
+          pixelsToTime={pixelsToTime} // PASS THIS
           pixelsPerSecondAtZoom1={pixelsPerSecondAtZoom1}
           zoomLevel={zoomLevel}
+          onTimeChange={onTimeChange} // PASS THIS
         />
         <div className="tracks-wrapper" style={{ position: 'relative', border: '1px solid green', padding: '10px 0', minHeight: '100px' }}>
           <div className="scene-track" style={{ position: 'relative', height: '80px' }}>
@@ -233,8 +363,10 @@ export const TimelineComponent = (props: TimelineProps) => {
               <SceneItem
                 key={scene.id}
                 scene={scene}
+                allScenes={scenes} // PASS ALL SCENES
                 layersInScene={layers.filter(l => l.sceneId === scene.id)}
                 timeToPixels={timeToPixels}
+                pixelsToTime={pixelsToTime} // PASS pixelsToTime
               />
             ))}
           </div>
