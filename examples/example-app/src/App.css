@@ -1,0 +1,51 @@
+/* examples/example-app/src/App.css */
+
+/* Ensure Tailwind base, components, utilities are imported if this is the main CSS.
+   Usually, this is handled in index.css by Shadcn/ui setup.
+   This file can be for additional global styles or overrides. */
+
+/* Custom styling for specific layer types from the library */
+.rt-layer-item.rt-layer-type-image {
+  background-color: #e0f7fa !important; /* Light cyan - use !important if needed to override inline styles from component if any */
+  border: 2px dashed #00bcd4 !important; /* Cyan border */
+  color: #00796b; /* Darker cyan text */
+}
+
+.rt-layer-item.rt-layer-type-text {
+  background-color: #fff9c4 !important; /* Pale yellow */
+  border: 2px dashed #ffeb3b !important; /* Yellow border */
+  font-style: italic;
+}
+
+.rt-layer-item.rt-layer-type-shape {
+  background-color: #ffe0b2 !important; /* Light orange */
+  border: 2px dashed #ff9800 !important; /* Orange border */
+}
+
+/* Example of overriding a scene's appearance */
+/* This would require SceneItem.tsx to similarly add a custom class, e.g., based on scene.meta.name or a specific meta tag */
+/* For now, let's focus on layer types as LayerItem is already modified. */
+/*
+.rt-scene-item.custom-scene-class-example {
+  border-left: 5px solid red !important;
+}
+*/
+
+/* Customizing the playhead */
+.rt-playhead {
+  background-color: blueviolet !important; /* Change playhead color */
+  width: 3px !important; /* Make it thicker */
+}
+
+/* Customizing the timeline ruler */
+.rt-timeline-ruler {
+    background-color: #e8eaf6 !important; /* Indigo lighten-5 */
+    border-bottom: 1px solid #3f51b5 !important; /* Indigo */
+}
+.rt-ruler-tick-major {
+    background-color: #3f51b5 !important; /* Indigo */
+}
+.rt-ruler-label {
+    color: #283593 !important; /* Indigo darken-3 */
+    font-weight: bold;
+}

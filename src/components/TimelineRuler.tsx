@@ -4,10 +4,10 @@ import React, { useRef, useCallback } from 'react'; // Add useRef, useCallback
 export interface TimelineRulerProps {
   duration: number; // Total duration of the timeline in ms
   timeToPixels: (time: number) => number;
-  pixelsToTime: (pixels: number) => number; // ADD THIS
-  pixelsPerSecondAtZoom1: number; // To help determine appropriate tick density
-  zoomLevel: number;
-  onTimeChange?: (newTime: number) => void; // ADD THIS
+  pixelsToTime: (pixels: number) => number;
+  // pixelsPerSecondAtZoom1: number; // No longer directly used for tick calculation logic
+  // zoomLevel: number; // No longer directly used for tick calculation logic
+  onTimeChange?: (newTime: number) => void;
 }
 
 const MIN_PX_PER_MAJOR_TICK = 80; // Minimum pixels between major ticks
@@ -16,10 +16,10 @@ const MIN_PX_PER_MINOR_TICK = 8;  // Minimum pixels between minor ticks
 export const TimelineRuler = ({
     duration,
     timeToPixels,
-    pixelsToTime, // Destructure
-    pixelsPerSecondAtZoom1,
-    zoomLevel,
-    onTimeChange  // Destructure
+    pixelsToTime,
+    // pixelsPerSecondAtZoom1, // Removed
+    // zoomLevel, // Removed
+    onTimeChange
 }: TimelineRulerProps) => {
   const rulerRef = useRef<HTMLDivElement>(null); // Ref for the ruler div
   const rulerWidth = timeToPixels(duration);

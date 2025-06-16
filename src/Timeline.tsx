@@ -352,10 +352,10 @@ export const TimelineComponent = (props: TimelineProps) => {
         <TimelineRuler
           duration={totalDuration}
           timeToPixels={timeToPixels}
-          pixelsToTime={pixelsToTime} // PASS THIS
-          pixelsPerSecondAtZoom1={pixelsPerSecondAtZoom1}
-          zoomLevel={zoomLevel}
-          onTimeChange={onTimeChange} // PASS THIS
+          pixelsToTime={pixelsToTime}
+          // pixelsPerSecondAtZoom1={pixelsPerSecondAtZoom1} // Removed
+          // zoomLevel={zoomLevel} // Removed
+          onTimeChange={onTimeChange}
         />
         <div className="tracks-wrapper" style={{ position: 'relative', border: '1px solid green', padding: '10px 0', minHeight: '100px' }}>
           <div className="scene-track" style={{ position: 'relative', height: '80px' }}>
@@ -363,10 +363,10 @@ export const TimelineComponent = (props: TimelineProps) => {
               <SceneItem
                 key={scene.id}
                 scene={scene}
-                allScenes={scenes} // PASS ALL SCENES
+                // allScenes={scenes} // No longer needed by SceneItem
                 layersInScene={layers.filter(l => l.sceneId === scene.id)}
                 timeToPixels={timeToPixels}
-                pixelsToTime={pixelsToTime} // PASS pixelsToTime
+                // pixelsToTime={pixelsToTime} // No longer needed by SceneItem
               />
             ))}
           </div>

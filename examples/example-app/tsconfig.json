@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "react-timeline-library": ["../../src/index.ts"],
+      "@/*": ["./src/*"]
+    },
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true, // Vite handles emit, this is for type checking
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // "erasableSyntaxOnly": true, // Removing some of the stricter/newer options for broader compatibility
+    "noFallthroughCasesInSwitch": true,
+    // "noUncheckedSideEffectImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true
+    // "declaration": true, // Not strictly needed for an app
+    // "declarationMap": true // Not strictly needed for an app
+  },
+  "include": ["src", "vite.config.ts"], // Include src and vite config
+  "exclude": ["node_modules", "dist"] // Standard excludes
+}

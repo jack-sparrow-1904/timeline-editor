@@ -46,13 +46,13 @@ const ResizeHandle = (props: {
 
 export interface SceneItemProps {
   scene: Scene;
-  allScenes: Scene[]; // ADDED: For snapping calculations
+  // allScenes: Scene[]; // No longer needed here, snapping is in Timeline.tsx
   layersInScene: Layer[];
   timeToPixels: (time: number) => number;
-  pixelsToTime: (pixels: number) => number; // ADDED: For snapping
+  // pixelsToTime: (pixels: number) => number; // No longer needed here
 }
 
-export const SceneItem = ({ scene, allScenes, layersInScene, timeToPixels, pixelsToTime }: SceneItemProps) => {
+export const SceneItem = ({ scene, layersInScene, timeToPixels }: SceneItemProps) => { // Removed allScenes, pixelsToTime
   // Snapping logic will be moved to Timeline.tsx's onDragMove for main item drag
 
   const {attributes, listeners, setNodeRef, isDragging: isSceneDragging} = useDraggable({
@@ -94,9 +94,9 @@ export const SceneItem = ({ scene, allScenes, layersInScene, timeToPixels, pixel
           <LayerItem
             key={layer.id}
             layer={layer}
-            allLayersInScene={layersInScene} // PASS ALL LAYERS IN THIS SCENE
+            // allLayersInScene={layersInScene} // No longer needed by LayerItem
             timeToPixels={timeToPixels}
-            pixelsToTime={pixelsToTime} // PASS pixelsToTime
+            // pixelsToTime={pixelsToTime} // No longer needed by LayerItem
           />
         ))}
       </div>

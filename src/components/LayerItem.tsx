@@ -1,16 +1,14 @@
 // src/components/LayerItem.tsx
 import React from 'react';
 import type { Layer } from '../types';
-import { useDraggable } from '@dnd-kit/core'; // Modifier removed
+import { useDraggable } from '@dnd-kit/core';
 
 export interface LayerItemProps {
   layer: Layer;
-  allLayersInScene: Layer[]; // ADDED: For snapping calculations
   timeToPixels: (time: number) => number;
-  pixelsToTime: (pixels: number) => number; // ADDED
 }
 
-// Handle sub-component remains the same as it's for resize, not main drag snapping
+// Handle sub-component remains the same
 const Handle = ({ id, layer, type, children, ...props }: any) => {
   const {attributes, listeners, setNodeRef, isDragging} = useDraggable({
     id: id,
@@ -43,13 +41,10 @@ const Handle = ({ id, layer, type, children, ...props }: any) => {
   );
 };
 
-export const LayerItem = ({ layer, allLayersInScene, timeToPixels, pixelsToTime }: LayerItemProps) => {
-  // Snapping logic will be moved to Timeline.tsx's onDragMove
-
+export const LayerItem = ({ layer, timeToPixels }: LayerItemProps) => {
   const {attributes, listeners, setNodeRef, isDragging: isLayerDragging} = useDraggable({
     id: `layer-${layer.id}`,
     data: { type: 'layer', originalElement: layer, sceneId: layer.sceneId },
-    // modifiers: [snapToLayerEdgesModifier] // MODIFIER REMOVED FROM HERE
   });
 
   const layerStyle: React.CSSProperties = {
@@ -58,7 +53,7 @@ export const LayerItem = ({ layer, allLayersInScene, timeToPixels, pixelsToTime 
     width: timeToPixels(layer.duration),
     top: `${layer.track * 25}px`,
     height: '20px',
-    backgroundColor: layer.meta?.type === 'text' ? 'rgba(144, 238, 144, 0.7)' : 'rgba(255, 165, 0, 0.7)',
+    backgroundColor: layer.meta?.type === 'text' ? 'rgba(144, 238, 144, 0.7)' : 'rgba(255, 165, 0, 0.7)', // Default, can be overridden by CSS
     border: '1px solid #888',
     borderRadius: '3px',
     boxSizing: 'border-box',
@@ -73,13 +68,16 @@ export const LayerItem = ({ layer, allLayersInScene, timeToPixels, pixelsToTime 
     zIndex: isLayerDragging ? 30 : 2,
   };
 
+  // ADD DYNAMIC CLASSNAME
+  const customClassName = layer.meta?.type ? `rt-layer-type-${layer.meta.type}` : '';
+
   return (
     <div
       ref={setNodeRef}
       style={layerStyle}
       {...listeners}
       {...attributes}
-      className="rt-layer-item"
+      className={`rt-layer-item ${customClassName}`} // Combine base class with custom
       title={`Layer: ${layer.id} (Track ${layer.track})`}
     >
       <div style={{pointerEvents: 'none'}}>
