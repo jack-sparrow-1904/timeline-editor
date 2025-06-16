@@ -1,58 +1,107 @@
 // src/components/SceneItem.tsx
 import React from 'react';
-import type { Scene /*, Layer*/ } from '../types'; // Using 'type' for Layer as it's not used directly yet
-// import { useDraggable } from '@dnd-kit/core'; // Will be added in a later step
-// import { LayerItem } from './LayerItem'; // Will be added when LayerItem is created
+import type { Scene, Layer } from '../types';
+import { LayerItem } from './LayerItem';
+import { useDraggable } from '@dnd-kit/core';
+// CSS import might not be needed if not using transform directly for drag visuals
+// import { CSS } from '@dnd-kit/utilities';
+
+// Re-using a similar Handle component structure as in LayerItem for consistency
+// This could be refactored into a shared component later if desired.
+const ResizeHandle = (props: {
+    id: string;
+    scene: Scene;
+    type: 'scene-resize-left' | 'scene-resize-right';
+    children?: React.ReactNode;
+}) => {
+  const {attributes, listeners, setNodeRef, isDragging} = useDraggable({
+    id: props.id,
+    data: {
+      type: props.type,
+      originalElement: props.scene,
+      sceneId: props.scene.id, // Keep consistent data structure if useful
+    },
+  });
+
+  const handleStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: '10px', // Slightly wider for scenes
+    cursor: props.type === 'scene-resize-left' ? 'ew-resize' : 'ew-resize',
+    zIndex: 15, // Above scene item, but below fully dragging item
+    backgroundColor: isDragging ? 'rgba(0,100,255,0.3)' : 'rgba(0,100,255,0.1)',
+  };
+  if (props.type === 'scene-resize-left') {
+    handleStyle.left = '-5px';
+  } else {
+    handleStyle.right = '-5px';
+  }
+
+  return (
+    <div ref={setNodeRef} style={handleStyle} {...listeners} {...attributes}>
+      {props.children}
+    </div>
+  );
+};
+
 
 export interface SceneItemProps {
   scene: Scene;
-  // layersInScene: Layer[]; // To be used when rendering LayerItem
+  layersInScene: Layer[];
   timeToPixels: (time: number) => number;
-  // pixelsToTime: (pixels: number) => number; // For resizing/interaction later
-  // onLayerChange: (change: LayerChange) => void; // For layer interactions
-  // isSelected?: boolean; // For selection styling later
-  // onSelect?: (id: string) => void; // For selection handling later
 }
 
-export const SceneItem = ({ scene, timeToPixels }: SceneItemProps) => {
-  // const {attributes, listeners, setNodeRef, transform} = useDraggable({
-  //   id: `scene-${scene.id}`,
-  //   data: {
-  //     type: 'scene',
-  //     originalElement: scene,
-  //   },
-  // });
+export const SceneItem = ({ scene, layersInScene, timeToPixels }: SceneItemProps) => {
+  const {attributes, listeners, setNodeRef, isDragging: isSceneDragging} = useDraggable({
+    id: `scene-${scene.id}`,
+    data: {
+      type: 'scene',
+      originalElement: scene,
+    },
+  });
 
-  const style: React.CSSProperties = {
+  const sceneStyle: React.CSSProperties = {
     position: 'absolute',
     left: timeToPixels(scene.startTime),
     width: timeToPixels(scene.duration),
-    height: '60px', // Default height, can be made configurable
-    backgroundColor: scene.meta?.backgroundColor || 'rgba(173, 216, 230, 0.7)', // Lightblue with some transparency
-    border: '1px solid #007bff', // A distinct blue border
+    height: '60px',
+    backgroundColor: scene.meta?.backgroundColor || 'rgba(173, 216, 230, 0.7)',
+    border: '1px solid #007bff',
     borderRadius: '4px',
     boxSizing: 'border-box',
-    overflow: 'hidden', // To contain layers when they are added
-    cursor: 'pointer', // Default cursor, will be 'grab' when draggable
-    // transition: transform ? 'transform 0.25s ease' : 'none', // Smooth transform
-    // transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
-    zIndex: 1, // Default z-index
+    overflow: 'visible', // Important for handles to show
+    cursor: isSceneDragging ? 'grabbing' : 'grab',
+    opacity: isSceneDragging ? 0.75 : 1,
+    zIndex: isSceneDragging ? 20 : 1, // Ensure dragging scene is on top
   };
 
   return (
     <div
-      // ref={setNodeRef} // For dnd-kit
-      style={style}
-      // {...listeners} // For dnd-kit
-      // {...attributes} // For dnd-kit
-      className="rt-scene-item" // For custom styling
+      ref={setNodeRef}
+      style={sceneStyle}
+      {...listeners}
+      {...attributes}
+      className="rt-scene-item"
       title={scene.meta?.name || `Scene ${scene.id}`}
     >
-      <div style={{ padding: '5px', fontWeight: 'bold' }}>
+      <div style={{ padding: '5px', fontWeight: 'bold', pointerEvents: 'none'}}>
         {scene.meta?.name || scene.id}
       </div>
-      {/* Layers will be rendered here */}
-      {/* {layersInScene.map(layer => <LayerItem key={layer.id} ... />)} */}
+
+      <div className="rt-scene-item-layers-container" style={{ position: 'relative', width: '100%', height: '100%' }}>
+        {layersInScene.map(layer => (
+          <LayerItem
+            key={layer.id}
+            layer={layer}
+            timeToPixels={timeToPixels}
+          />
+        ))}
+      </div>
+
+      {/* Scene Resize Handles */}
+      <ResizeHandle id={`scene-${scene.id}-resize-left`} scene={scene} type="scene-resize-left" />
+      <ResizeHandle id={`scene-${scene.id}-resize-right`} scene={scene} type="scene-resize-right" />
     </div>
   );
 };

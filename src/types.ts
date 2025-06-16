@@ -36,8 +36,8 @@ export interface GlobalLayer extends TimelineElement {
 
 // --- Callback Payloads ---
 
-export type SceneChange = { type: 'move' | 'resize-start' | 'resize-end'; scene: Scene };
-export type LayerChange = { type: 'move' | 'resize-start' | 'resize-end'; layer: Layer };
+export type SceneChange = { type: 'move' | 'resize' | 'resize-start' | 'resize-end'; scene: Scene };
+export type LayerChange = { type: 'move' | 'resize' | 'resize-start' | 'resize-end'; layer: Layer };
 
 // --- Main Component Props ---
 
